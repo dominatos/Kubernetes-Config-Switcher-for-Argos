@@ -8,6 +8,9 @@ KUBE_DIR="$HOME/.kube"
 # Define the active Kubernetes config file
 CONFIG_FILE="$KUBE_DIR/config"
 
+# Fix PATH to include common k9s locations
+export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+
 # Function to extract the cluster name from a kubeconfig file
 # Arguments:
 #   $1: Path to the kubeconfig file
@@ -54,24 +57,33 @@ switch_config() {
 
 # Function to open k9s (Kubernetes CLI UI) in a new terminal
 open_k9s() {
-    # Check if k9s is installed
-    if command -v k9s >/dev/null 2>&1; then
+    # Try to find k9s in common locations
+    local k9s_path=""
+    if [[ -x "$HOME/.local/bin/k9s" ]]; then
+        k9s_path="$HOME/.local/bin/k9s"
+    elif [[ -x "/usr/local/bin/k9s" ]]; then
+        k9s_path="/usr/local/bin/k9s"
+    elif command -v k9s >/dev/null 2>&1; then
+        k9s_path="k9s"
+    fi
+    
+    if [[ -n "$k9s_path" ]]; then
         # Open k9s in a new terminal, trying common terminal emulators
         if command -v gnome-terminal >/dev/null 2>&1; then
-            gnome-terminal -- k9s
+            gnome-terminal -- bash -c "export PATH='$PATH'; $k9s_path"
         elif command -v konsole >/dev/null 2>&1; then
-            konsole -e k9s
+            konsole -e bash -c "export PATH='$PATH'; $k9s_path"
         elif command -v xfce4-terminal >/dev/null 2>&1; then
-            xfce4-terminal -e k9s
+            xfce4-terminal -e bash -c "export PATH='$PATH'; $k9s_path"
         elif command -v xterm >/dev/null 2>&1; then
-            xterm -e k9s
+            xterm -e bash -c "export PATH='$PATH'; $k9s_path"
         else
             # Notify if no supported terminal is found
             notify-send "Error" "No supported terminal found" 2>/dev/null || true
         fi
     else
         # Notify if k9s is not installed
-        notify-send "Error" "k9s is not installed" 2>/dev/null || true
+        notify-send "Error" "k9s is not installed or not found in PATH" 2>/dev/null || true
     fi
 }
 
@@ -142,7 +154,12 @@ echo "---"
 # Additional actions for the Argos menu
 # Option to open k9s, only if there's an active config
 if [[ -f "config" ]]; then
-    echo "🚀 Open k9s | bash='$0' param1=k9s terminal=false"
+    # Check if k9s is available before showing the option
+    if [[ -x "$HOME/.local/bin/k9s" ]] || [[ -x "/usr/local/bin/k9s" ]] || command -v k9s >/dev/null 2>&1; then
+        echo "🚀 Open k9s | bash='$0' param1=k9s terminal=false"
+    else
+        echo "❌ k9s not found"
+    fi
 fi
 # Option to open the .kube directory in a file manager
 echo "📁 Open ~/.kube | bash='nautilus' param1='$KUBE_DIR' terminal=false"
