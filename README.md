@@ -111,5 +111,5 @@ MIT — feel free to use, modify, and share.
 
 ## ✍️ Author
 
-[Sviatoslav](https://github.com/YOUR_USERNAME)
+[Sviatoslav](https://github.com/dominatos)
 
